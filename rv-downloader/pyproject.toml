@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "rv-downloader"
+version = "0.1.0"
+description = ""
+authors = ["Asim Ihsan <ssh@sshemail.ihsan.io>"]
+readme = "README.md"
+packages = [{include = "rv_downloader"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+requests = "^2.28.1"
+beautifulsoup4 = "^4.11.1"
+diskcache = "^5.4.0"
+ipdb = "^0.13.9"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
