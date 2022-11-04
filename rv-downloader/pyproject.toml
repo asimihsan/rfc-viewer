@@ -14,6 +14,10 @@ diskcache = "^5.4.0"
 ipdb = "^0.13.9"
 asonic = "^2.0.0"
 zstandard = "^0.19.0"
+spacy = "^3.4.2"
+chardet = "^5.0.0"
+textacy = "^0.12.0"
+scikit-learn = "^1.1.3"
 
 
 [build-system]
