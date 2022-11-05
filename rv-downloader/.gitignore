@@ -232,6 +232,8 @@ fabric.properties
 .idea/caches/build_file_checksums.ser
 
 rsync
+!rsync/.gitkeep
+
 rfc-stork.json
 rfc-stork.st
 preprocessed_rfcs.jsonl

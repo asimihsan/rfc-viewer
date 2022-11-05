@@ -41,6 +41,8 @@ class RFCPreprocessedWrapper:
         datum = self.data[rfc_id]
         if "$html" in datum:
             datum["$html"] = json_decompress(datum["$html"])
+        if "txt" in datum:
+            datum["$html"] = json_decompress(datum["$txt"])
         datum["words"] = json_decompress(datum["words"])
         return Rfc(id=datum["doc_id"], title=datum["title"], abstract=datum["abstract"], data=datum,
                    words=datum["words"], doc=" ".join(datum["words"]))
