@@ -10,7 +10,10 @@ import pathlib
 # https://gist.github.com/koreyou/f3a8a0470d32aa56b32f198f49a9f2b8
 class BM25(object):
     def __init__(self, b=0.75, k1=1.6):
-        self.vectorizer = TfidfVectorizer(norm=None, analyzer=str.split, smooth_idf=False)
+        self.vectorizer = TfidfVectorizer(norm=None,
+                                          analyzer=str.split,
+                                          smooth_idf=False,
+                                          min_df=2)
         self.b = b
         self.k1 = k1
 
