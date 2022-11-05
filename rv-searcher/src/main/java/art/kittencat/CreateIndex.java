@@ -22,7 +22,8 @@ public class CreateIndex {
         System.out.println("Hello world!");
 
         // 1. Index
-        try (CustomAnalyzer analyzer = new CustomAnalyzer();
+        try (StandardAnalyzer analyzer = new StandardAnalyzer();
+//             CustomAnalyzer analyzer = new CustomAnalyzer();
              Directory index = FSDirectory.open(Path.of("lucene-index"));
              Closer closer = Closer.create();
              RfcReader rfcReader = new RfcReader(Path.of(args[0]))) {

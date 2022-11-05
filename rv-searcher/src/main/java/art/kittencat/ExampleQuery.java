@@ -18,7 +18,8 @@ import java.nio.file.Path;
 
 public class ExampleQuery {
     public static void main(String[] args) throws ParseException, IOException {
-        CustomAnalyzer analyzer = new CustomAnalyzer();
+//        CustomAnalyzer analyzer = new CustomAnalyzer();
+        StandardAnalyzer analyzer = new StandardAnalyzer();
         Directory index = FSDirectory.open(Path.of("lucene-index"));
 
         // 2 . Query
