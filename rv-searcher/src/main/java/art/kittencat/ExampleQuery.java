@@ -1,6 +1,7 @@
 package art.kittencat;
 
 import com.github.luben.zstd.Zstd;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -26,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
 public class ExampleQuery {
+
     public static void main(String[] args) throws ParseException, IOException {
 //        CustomAnalyzer analyzer = new CustomAnalyzer();
         StandardAnalyzer analyzer = new StandardAnalyzer();
@@ -48,8 +50,7 @@ public class ExampleQuery {
         searcher.setSimilarity(new MultiSimilarity(new Similarity[]{
 //                new BM25Similarity(),
 //                new AxiomaticF2EXP(),
-                new LMDirichletSimilarity(),
-                new BM25Similarity()
+                new LMDirichletSimilarity(), new BM25Similarity()
 //                new DFISimilarity(new IndependenceChiSquared()),
         }));
 
@@ -75,7 +76,9 @@ public class ExampleQuery {
             Document d = searcher.doc(docId);
             System.out.printf("%d. %s\t%s\n", (i + 1), d.get("id"), d.get("title"));
             try {
-                String[] highlights = highlighter.getBestFragments(analyzer, "doc", d.get("doc"), 3);
+                String words = getWords(d);
+                TokenStream wordsTokenStream = analyzer.tokenStream("doc", words);
+                String[] highlights = highlighter.getBestFragments(wordsTokenStream, words, 3);
                 for (String highlight : highlights) {
                     System.out.println(highlight);
                 }
@@ -90,9 +93,7 @@ public class ExampleQuery {
     }
 
     private static String decompress(byte[] compressed) {
-        return new String(
-                Zstd.decompress(compressed, (int) Zstd.decompressedSize(compressed)),
-                StandardCharsets.UTF_8);
+        return new String(Zstd.decompress(compressed, (int) Zstd.decompressedSize(compressed)), StandardCharsets.UTF_8);
     }
 
     private static String getDoc(Document d) {
@@ -106,5 +107,10 @@ public class ExampleQuery {
         } else {
             return "";
         }
+    }
+
+    private static String getWords(Document d) {
+        byte[] wordsBytes = d.getBinaryValue("wordsCompressed").bytes;
+        return decompress(wordsBytes);
     }
 }

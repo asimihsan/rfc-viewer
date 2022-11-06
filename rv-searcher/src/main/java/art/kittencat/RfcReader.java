@@ -5,7 +5,6 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
@@ -16,8 +15,6 @@ import java.nio.file.Path;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
-import java.util.StringJoiner;
-import java.util.stream.Collectors;
 
 public class RfcReader implements AutoCloseable {
     private static final Gson gson = new Gson();
@@ -65,6 +62,10 @@ public class RfcReader implements AutoCloseable {
                 StandardCharsets.UTF_8);
     }
 
+    private byte[] compress(String uncompressed) {
+        return Zstd.compress(uncompressed.getBytes(StandardCharsets.UTF_8), 19 /*level*/);
+    }
+
     @Nonnull
     private byte[] maybeGetBase64EncodedBytes(String key, Map<String, Object> map) {
         if (!map.containsKey(key)) {
@@ -87,7 +88,9 @@ public class RfcReader implements AutoCloseable {
         List<String> wordsList = gson.fromJson(new StringReader(wordsJson), listType);
         String words = String.join(" ", wordsList);
 
-        return new Rfc(id, title, abstractText, htmlCompressed, txtCompressed, words);
+        byte[] wordsCompressed = compress(words);
+
+        return new Rfc(id, title, abstractText, htmlCompressed, txtCompressed, words, wordsCompressed);
     }
 
     @Override

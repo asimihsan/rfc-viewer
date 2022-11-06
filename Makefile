@@ -14,3 +14,7 @@ preprocess-rfcs:
 create-index:
 	cd $(makeFileDir)/rv-searcher && \
 		./gradlew createIndex --args='$(makeFileDir)/rv-downloader/preprocessed_rfcs.jsonl'
+
+searcher:
+	cd $(makeFileDir)/rv-searcher && \
+		./gradlew shadowJar

@@ -66,16 +66,17 @@ public class CreateIndex {
     private static void addDoc(IndexWriter w,
                                    Rfc rfc) throws IOException {
         Document doc = new Document();
-        doc.add(new StringField("id", rfc.id(), Field.Store.YES));
-        doc.add(new StringField("title", rfc.title(), Field.Store.YES));
-        if (rfc.abstractText() != null) {
-            doc.add(new StringField("abstractText", rfc.abstractText(), Field.Store.YES));
+        doc.add(new StringField("id", rfc.getId(), Field.Store.YES));
+        doc.add(new StringField("title", rfc.getTitle(), Field.Store.YES));
+        if (rfc.getAbstractText() != null) {
+            doc.add(new StringField("abstractText", rfc.getAbstractText(), Field.Store.YES));
         } else {
             doc.add(new StringField("abstractText", "", Field.Store.YES));
         }
-        doc.add(new TextField("doc", rfc.words(), Field.Store.YES));
-        doc.add(new StoredField("htmlCompressed", rfc.htmlCompressed()));
-        doc.add(new StoredField("textCompressed", rfc.textCompressed()));
+        doc.add(new TextField("doc", rfc.getWords(), Field.Store.NO));
+        doc.add(new StoredField("htmlCompressed", rfc.getHtmlCompressed()));
+        doc.add(new StoredField("textCompressed", rfc.getTextCompressed()));
+        doc.add(new StoredField("wordsCompressed", rfc.getWordsCompressed()));
         w.addDocument(doc);
     }
 }
