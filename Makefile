@@ -4,7 +4,7 @@ init:
 	pip install poetry
 
 rsync-rfcs:
-	nice -n 19 rsync -avz --delete --exclude '*.pdf' --exclude '*.ps' --exclude 'tar' \
+	nice -n 19 rsync -avz --delete --exclude '*.pdf' --exclude '*.ps' --exclude 'tar' --no-links \
 		ftp.rfc-editor.org::rfc-ed-all $(makeFileDir)/rv-downloader/rsync
 
 preprocess-rfcs:
