@@ -27,8 +27,11 @@ public class CreateIndex {
             IndexWriterConfig config = new IndexWriterConfig(analyzer);
             config.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
             config.setSimilarity(new MultiSimilarity(new Similarity[]{
-                    new AxiomaticF2EXP(),
-                    new DFISimilarity(new IndependenceStandardized()),
+//                    new BM25Similarity(),
+//                    new AxiomaticF2EXP(),
+                    new LMDirichletSimilarity(),
+                    new BM25Similarity(),
+//                    new DFISimilarity(new IndependenceChiSquared()),
             }));
             IndexWriter w = closer.register(new IndexWriter(index, config));
 
@@ -48,7 +51,7 @@ public class CreateIndex {
         Document doc = new Document();
         doc.add(new StringField("id", rfc.id(), Field.Store.YES));
         doc.add(new StringField("title", rfc.title(), Field.Store.YES));
-        doc.add(new TextField("doc", rfc.words(), Field.Store.NO));
+        doc.add(new TextField("doc", rfc.words(), Field.Store.YES));
         doc.add(new StoredField("htmlCompressed", rfc.htmlCompressed()));
         doc.add(new StoredField("textCompressed", rfc.textCompressed()));
         w.addDocument(doc);

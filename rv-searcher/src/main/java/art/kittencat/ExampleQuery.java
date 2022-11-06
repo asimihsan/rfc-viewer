@@ -11,6 +11,9 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.highlight.Highlighter;
+import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
+import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.similarities.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -27,15 +30,22 @@ public class ExampleQuery {
 
         // 2 . Query
         String querystr = args.length > 0 ? args[0] : "cookie";
-        Query q = new QueryParser("doc", analyzer).parse(querystr);
+        QueryParser qp = new QueryParser("doc", analyzer);
+        Query q = qp.parse(querystr);
+        QueryScorer queryScorer = new QueryScorer(q);
+        Highlighter highlighter = new Highlighter(queryScorer);
+        highlighter.setMaxDocCharsToAnalyze(Integer.MAX_VALUE);
 
         // 3. Search
         int hitsPerPage = 20;
         IndexReader reader = DirectoryReader.open(index);
         IndexSearcher searcher = new IndexSearcher(reader);
         searcher.setSimilarity(new MultiSimilarity(new Similarity[]{
-                new AxiomaticF2EXP(),
-                new DFISimilarity(new IndependenceStandardized()),
+//                new BM25Similarity(),
+//                new AxiomaticF2EXP(),
+                new LMDirichletSimilarity(),
+                new BM25Similarity()
+//                new DFISimilarity(new IndependenceChiSquared()),
         }));
 
         TopDocs docs = searcher.search(q, hitsPerPage);
@@ -47,7 +57,16 @@ public class ExampleQuery {
             int docId = hits[i].doc;
             Document d = searcher.doc(docId);
             System.out.printf("%d. %s\t%s\n", (i + 1), d.get("id"), d.get("title"));
+            try {
+                String[] highlights = highlighter.getBestFragments(analyzer, "doc", d.get("doc"), 3);
+                for (String highlight : highlights) {
+                    System.out.println(highlight);
+                }
+            } catch (InvalidTokenOffsetsException e) {
+                throw new RuntimeException(e);
+            }
             System.out.printf("%s\n", searcher.explain(q, docId));
+            System.out.println("---");
         }
 
 //        System.out.println(getDoc(searcher.doc(hits[0].doc)));
