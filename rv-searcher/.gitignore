@@ -46,4 +46,5 @@ hs_err_pid*
 replay_pid*
 
 lucene-index/*
+lucene-suggester/*
 .idea

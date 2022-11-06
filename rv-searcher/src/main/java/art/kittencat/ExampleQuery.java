@@ -14,7 +14,10 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.search.highlight.QueryScorer;
-import org.apache.lucene.search.similarities.*;
+import org.apache.lucene.search.similarities.BM25Similarity;
+import org.apache.lucene.search.similarities.LMDirichletSimilarity;
+import org.apache.lucene.search.similarities.MultiSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
@@ -27,6 +30,8 @@ public class ExampleQuery {
 //        CustomAnalyzer analyzer = new CustomAnalyzer();
         StandardAnalyzer analyzer = new StandardAnalyzer();
         Directory index = FSDirectory.open(Path.of("lucene-index"));
+//        Directory suggesterDir = FSDirectory.open(Path.of("lucene-suggester"));
+//        AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(suggesterDir, analyzer);
 
         // 2 . Query
         String querystr = args.length > 0 ? args[0] : "cookie";
@@ -52,6 +57,18 @@ public class ExampleQuery {
         ScoreDoc[] hits = docs.scoreDocs;
 
         // 4. Display
+//        int numSuggestions = 3;
+//        List<Lookup.LookupResult> lookupResults = suggester.lookup(querystr, true /*onlyMorePopular*/, numSuggestions);
+//        for (Lookup.LookupResult lookupResult : lookupResults) {
+//            String display;
+//            if (lookupResult.highlightKey instanceof String) {
+//                display = (String)lookupResult.highlightKey;
+//            } else {
+//                display = lookupResult.key.toString();
+//            }
+//            System.out.printf("Auto suggest:\t%s\n", display);
+//        }
+
         System.out.printf("Found %d hits.\n", hits.length);
         for (int i = 0; i < hits.length; i++) {
             int docId = hits[i].doc;
@@ -65,7 +82,7 @@ public class ExampleQuery {
             } catch (InvalidTokenOffsetsException e) {
                 throw new RuntimeException(e);
             }
-            System.out.printf("%s\n", searcher.explain(q, docId));
+//            System.out.printf("%s\n", searcher.explain(q, docId));
             System.out.println("---");
         }
 

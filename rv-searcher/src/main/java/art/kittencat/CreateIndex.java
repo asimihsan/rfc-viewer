@@ -5,7 +5,10 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.search.similarities.*;
+import org.apache.lucene.search.similarities.BM25Similarity;
+import org.apache.lucene.search.similarities.LMDirichletSimilarity;
+import org.apache.lucene.search.similarities.MultiSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
@@ -44,13 +47,32 @@ public class CreateIndex {
             w.forceMerge(1);
             System.out.println("merged");
         }
+
+//        System.out.println("creating auto suggester lookup...");
+//        try (StandardAnalyzer analyzer = new StandardAnalyzer();
+//             Directory index = FSDirectory.open(Path.of("lucene-index"));
+//             IndexReader reader = DirectoryReader.open(index);
+//             Directory suggesterDir = FSDirectory.open(Path.of("lucene-suggester"))) {
+//            AnalyzingSuggester suggester = new AnalyzingSuggester(suggesterDir, "temp", analyzer);
+//            for (String field : new String[]{"title", "abstractText"}) {
+//                DocumentDictionary documentDictionary = new DocumentDictionary(
+//                        reader, field, null /*weightField*/);
+//                suggester.build(documentDictionary);
+//            }
+//        }
+//        System.out.println("done creating auto suggester lookup.");
     }
 
     private static void addDoc(IndexWriter w,
-                               Rfc rfc) throws IOException {
+                                   Rfc rfc) throws IOException {
         Document doc = new Document();
         doc.add(new StringField("id", rfc.id(), Field.Store.YES));
         doc.add(new StringField("title", rfc.title(), Field.Store.YES));
+        if (rfc.abstractText() != null) {
+            doc.add(new StringField("abstractText", rfc.abstractText(), Field.Store.YES));
+        } else {
+            doc.add(new StringField("abstractText", "", Field.Store.YES));
+        }
         doc.add(new TextField("doc", rfc.words(), Field.Store.YES));
         doc.add(new StoredField("htmlCompressed", rfc.htmlCompressed()));
         doc.add(new StoredField("textCompressed", rfc.textCompressed()));
