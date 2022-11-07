@@ -4,6 +4,8 @@ import * as apigwv2_integrations from '@aws-cdk/aws-apigatewayv2-integrations-al
 import * as cdk from 'aws-cdk-lib';
 import {aws_s3 as s3, Duration} from 'aws-cdk-lib';
 import {aws_lambda as lambda} from 'aws-cdk-lib';
+import {aws_cloudfront as cloudfront} from 'aws-cdk-lib';
+import {aws_cloudfront_origins as cloudfront_origins} from 'aws-cdk-lib';
 import {Construct} from 'constructs';
 import * as path from "path";
 import {Architecture} from "aws-cdk-lib/aws-lambda";
@@ -37,6 +39,12 @@ export class RfcViewerCdkStack extends cdk.Stack {
                 'DefaultIntegration', lambdaAlias),
         });
 
+        // const cloudfrontDistribution = new cloudfront.Distribution(this, 'myDist', {
+        //     defaultBehavior: {
+        //         origin: new cloudfront_origins.HttpOrigin(httpApi.apiEndpoint.replace(/^https:\/\//gi, ""))
+        //     },
+        // });
+
         new s3.Bucket(this, 'MyFirstBucket', {
             versioned: true,
             removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -48,5 +56,11 @@ export class RfcViewerCdkStack extends cdk.Stack {
             value: httpApi.apiEndpoint,
             description: 'RfcViewer API endpoint',
         });
+
+        // new cdk.CfnOutput(this, 'CloudfrontUrl', {
+        //     exportName: 'RfcViewerCloudfrontEndpoint',
+        //     value: cloudfrontDistribution.domainName,
+        //     description: 'RfcViewer API endpoint',
+        // });
     }
 }
