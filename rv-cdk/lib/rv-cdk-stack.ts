@@ -1,0 +1,29 @@
+import * as autoscaling from 'aws-cdk-lib/aws-autoscaling';
+import * as cdk from 'aws-cdk-lib';
+import {aws_s3 as s3, Duration} from 'aws-cdk-lib';
+import {aws_lambda as lambda} from 'aws-cdk-lib';
+import {Construct} from 'constructs';
+import * as path from "path";
+import {Architecture} from "aws-cdk-lib/aws-lambda";
+
+export class RfcViewerCdkStack extends cdk.Stack {
+    constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+        super(scope, id, props);
+
+        const lambdaFn = new lambda.DockerImageFunction(this, 'LambdaFunction2', {
+            code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, '../../rv-searcher/')),
+            timeout: Duration.seconds(20),
+            memorySize: 2048,
+            architecture: Architecture.ARM_64,
+        });
+        const lambdaAlias = lambdaFn.addAlias('prod');
+        const autoScaling = lambdaAlias.addAutoScaling({ maxCapacity: 5 });
+        autoScaling.scaleOnUtilization({ utilizationTarget: 0.5 });
+
+        new s3.Bucket(this, 'MyFirstBucket', {
+            versioned: true,
+            removalPolicy: cdk.RemovalPolicy.DESTROY,
+            autoDeleteObjects: true
+        });
+    }
+}

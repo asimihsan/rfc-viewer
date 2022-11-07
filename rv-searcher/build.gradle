@@ -1,8 +1,8 @@
 import com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer
 
 plugins {
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
     id 'java'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
 }
 
 java {
@@ -12,7 +12,7 @@ java {
 
 shadowJar {
     archiveBaseName = project.name
-    classifier = null
+    archiveClassifier = null
     archiveVersion = project.version
     mergeServiceFiles()
     transform(Log4j2PluginsCacheFileTransformer)
@@ -20,7 +20,7 @@ shadowJar {
 
 jar {
     manifest {
-        attributes('Main-Class': 'art.kittencat.ExampleQuery')
+        attributes('Main-Class': 'art.kittencat.lambda.Handler')
     }
 }
 
@@ -35,11 +35,11 @@ dependencies {
     implementation 'com.amazonaws:aws-lambda-java-core:1.2.1'
     implementation 'com.amazonaws:aws-lambda-java-events:3.11.0'
     implementation 'com.amazonaws:aws-lambda-java-log4j2:1.5.1'
-    implementation 'org.apache.logging.log4j:log4j-api:2.19.0'
-    implementation 'org.apache.logging.log4j:log4j-core:2.19.0'
     implementation 'com.github.luben:zstd-jni:1.5.2-5'
     implementation 'com.google.code.gson:gson:2.10'
     implementation 'com.google.guava:guava:31.1-jre'
+    implementation 'org.apache.logging.log4j:log4j-api:2.19.0'
+    implementation 'org.apache.logging.log4j:log4j-core:2.19.0'
     implementation 'org.apache.lucene:lucene-analyzers-common:8.11.2'
     implementation 'org.apache.lucene:lucene-core:9.4.1'
     implementation 'org.apache.lucene:lucene-highlighter:9.4.1'
@@ -52,6 +52,12 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+task copyRuntimeDependencies(type: Copy) {
+    from configurations.runtimeClasspath
+    into 'build/dependency'
+}
+
 
 task createIndex(type: JavaExec) {
     group = "Execution"
@@ -66,3 +72,6 @@ task exampleQuery(type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = "art.kittencat.ExampleQuery"
 }
+
+build.dependsOn copyRuntimeDependencies
+build.dependsOn shadowJar

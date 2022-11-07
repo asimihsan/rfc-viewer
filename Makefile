@@ -17,4 +17,18 @@ create-index:
 
 searcher:
 	cd $(makeFileDir)/rv-searcher && \
+        ./gradlew build && \
+		./gradlew copyRuntimeDependencies && \
 		./gradlew shadowJar
+
+searcher-lambda-docker-build: searcher
+	cd $(makeFileDir)/rv-searcher && \
+		docker build -t rv-searcher .
+
+searcher-lambda-run-docker: searcher-lambda-docker-build
+	cd $(makeFileDir)/rv-searcher && \
+		docker run -p 9000:9000 rv-searcher
+
+deploy-cdk: searcher-lambda-docker-build
+	cd $(makeFileDir)/rv-cdk && \
+		(source ~/.aws_kitten_cat_credentials && cdk deploy)
