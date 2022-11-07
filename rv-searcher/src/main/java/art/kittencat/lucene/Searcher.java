@@ -10,12 +10,10 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.search.highlight.QueryScorer;
@@ -71,13 +69,24 @@ public class Searcher {
             try {
                 String words = getWords(d);
                 TokenStream wordsTokenStream = analyzer.tokenStream("doc", words);
-                String[] highlights = highlighter.getBestFragments(wordsTokenStream, words, 3);
+                String[] highlights = highlighter.getBestFragments(wordsTokenStream, words, maxNumHighlightFragments);
                 results.add(new SearchResult(d.get("id"), d.get("title"), Arrays.asList(highlights)));
             } catch (InvalidTokenOffsetsException e) {
                 throw new RuntimeException(e);
             }
         }
         return results;
+    }
+
+    public String getDocById(String docId) throws IOException {
+        TopDocs docs = searcher.search(new TermQuery(new Term("id", docId)), 1);
+        ScoreDoc[] hits = docs.scoreDocs;
+        if (hits.length > 0) {
+            Document d = searcher.doc(hits[0].doc);
+            return getDoc(d);
+        } else {
+            return null;
+        }
     }
 
     private static String decompress(byte[] compressed) {

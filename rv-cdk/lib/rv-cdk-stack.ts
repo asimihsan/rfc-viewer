@@ -1,4 +1,6 @@
-import * as autoscaling from 'aws-cdk-lib/aws-autoscaling';
+import * as apigwv2 from '@aws-cdk/aws-apigatewayv2-alpha';
+import * as apigwv2_integrations from '@aws-cdk/aws-apigatewayv2-integrations-alpha';
+
 import * as cdk from 'aws-cdk-lib';
 import {aws_s3 as s3, Duration} from 'aws-cdk-lib';
 import {aws_lambda as lambda} from 'aws-cdk-lib';
@@ -13,17 +15,38 @@ export class RfcViewerCdkStack extends cdk.Stack {
         const lambdaFn = new lambda.DockerImageFunction(this, 'LambdaFunction2', {
             code: lambda.DockerImageCode.fromImageAsset(path.join(__dirname, '../../rv-searcher/')),
             timeout: Duration.seconds(20),
-            memorySize: 2048,
+            memorySize: 1024,
             architecture: Architecture.ARM_64,
         });
         const lambdaAlias = lambdaFn.addAlias('prod');
-        const autoScaling = lambdaAlias.addAutoScaling({ maxCapacity: 5 });
-        autoScaling.scaleOnUtilization({ utilizationTarget: 0.5 });
+        const autoScaling = lambdaAlias.addAutoScaling({maxCapacity: 5});
+        autoScaling.scaleOnUtilization({utilizationTarget: 0.5});
+
+        const httpApi = new apigwv2.HttpApi(this, 'HttpApi', {
+            corsPreflight: {
+                allowOrigins: ['*'],
+                allowMethods: [apigwv2.CorsHttpMethod.ANY],
+                maxAge: cdk.Duration.days(10),
+            },
+        });
+
+        new apigwv2.HttpRoute(this, 'Visits', {
+            httpApi: httpApi,
+            routeKey: apigwv2.HttpRouteKey.DEFAULT,
+            integration: new apigwv2_integrations.HttpLambdaIntegration(
+                'DefaultIntegration', lambdaAlias),
+        });
 
         new s3.Bucket(this, 'MyFirstBucket', {
             versioned: true,
             removalPolicy: cdk.RemovalPolicy.DESTROY,
             autoDeleteObjects: true
+        });
+
+        new cdk.CfnOutput(this, 'HttpApiUrl', {
+            exportName: 'RfcViewerEndpoint',
+            value: httpApi.apiEndpoint,
+            description: 'RfcViewer API endpoint',
         });
     }
 }

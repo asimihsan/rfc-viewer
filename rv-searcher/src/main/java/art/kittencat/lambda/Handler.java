@@ -1,5 +1,6 @@
 package art.kittencat.lambda;
 
+import art.kittencat.lucene.GetDocResult;
 import art.kittencat.lucene.SearchResult;
 import art.kittencat.lucene.Searcher;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -15,7 +16,9 @@ import org.apache.lucene.queryparser.classic.ParseException;
 import java.io.IOException;
 import java.io.StringReader;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
@@ -40,9 +43,43 @@ public class Handler implements RequestHandler<APIGatewayV2HTTPEvent, APIGateway
     @Override
     public APIGatewayV2HTTPResponse handleRequest(APIGatewayV2HTTPEvent input, Context context) {
         logger.info("entry");
+        String body;
+        if (input.getIsBase64Encoded()) {
+            body = new String(Base64.getDecoder().decode(input.getBody()), StandardCharsets.UTF_8);
+        } else {
+            body = input.getBody();
+        }
+        logger.info(body);
+        Map<String, String> map = gson.fromJson(new StringReader(body), mapType);
 
-        Map<String, String> map = gson.fromJson(new StringReader(input.getBody()), mapType);
-        String query = map.get("query");
+        try {
+            if (map.containsKey("query")) {
+                return handleQuery(map.get("query"));
+            } else if (map.containsKey("getDocById")) {
+                return handleGetDocById(map.get("getDocById"));
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return APIGatewayV2HTTPResponse.builder()
+                .withStatusCode(400)
+                .build();
+    }
+
+    private APIGatewayV2HTTPResponse handleGetDocById(String id) throws IOException {
+        String doc = searcher.getDocById(id);
+        GetDocResult result = new GetDocResult(doc);
+        String resultBody = Base64.getEncoder().encodeToString(gson.toJson(result).getBytes(StandardCharsets.UTF_8));
+        return APIGatewayV2HTTPResponse.builder()
+                .withStatusCode(200)
+                .withBody(resultBody)
+                .withIsBase64Encoded(true)
+                .build();
+
+    }
+
+    private APIGatewayV2HTTPResponse handleQuery(String query) {
         int hitsPerPage = 20;
         int maxNumHighlights = 3;
         List<SearchResult> results;
@@ -51,11 +88,11 @@ public class Handler implements RequestHandler<APIGatewayV2HTTPEvent, APIGateway
         } catch (ParseException | IOException e) {
             throw new RuntimeException(e);
         }
-
+        String resultBody = Base64.getEncoder().encodeToString(gson.toJson(results).getBytes(StandardCharsets.UTF_8));
         return APIGatewayV2HTTPResponse.builder()
                 .withStatusCode(200)
-                .withBody(gson.toJson(results))
-                .withIsBase64Encoded(false)
+                .withBody(resultBody)
+                .withIsBase64Encoded(true)
                 .build();
     }
 }
