@@ -7,6 +7,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.apache.logging.log4j.LogManager;
@@ -18,6 +19,7 @@ import java.io.StringReader;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -34,15 +36,34 @@ public class Handler implements RequestHandler<APIGatewayV2HTTPEvent, APIGateway
     static {
         try {
             searcher = new Searcher(Path.of("lucene-index"));
-            searcher.search("congestion", 20, 3);
+            for (String word : Arrays.asList("congestion", "loss", "mesh loss")) {
+                searcher.search(word, 20, 3);
+            }
         } catch (IOException | ParseException e) {
             throw new RuntimeException(e);
         }
     }
 
+    private static final Map<String, String> headers = new ImmutableMap.Builder<String, String>()
+            .put("Access-Control-Allow-Origin", "*")
+            .put("Access-Control-Allow-Credentials", "true")
+            .put("Access-Control-Allow-Headers", "Content-Type")
+            .put("Access-Control-Allow-Methods", "OPTIONS,POST")
+            .put("Content-Type", "application/json")
+            .build();
+
     @Override
     public APIGatewayV2HTTPResponse handleRequest(APIGatewayV2HTTPEvent input, Context context) {
         logger.info("entry");
+        if (input.getRequestContext().getHttp().getMethod().equals("OPTIONS")) {
+            return APIGatewayV2HTTPResponse.builder()
+                    .withStatusCode(200)
+                    .withBody("{}")
+                    .withIsBase64Encoded(false)
+                    .withHeaders(headers)
+                    .build();
+        }
+
         String body;
         if (input.getIsBase64Encoded()) {
             body = new String(Base64.getDecoder().decode(input.getBody()), StandardCharsets.UTF_8);
@@ -64,6 +85,7 @@ public class Handler implements RequestHandler<APIGatewayV2HTTPEvent, APIGateway
 
         return APIGatewayV2HTTPResponse.builder()
                 .withStatusCode(400)
+                .withHeaders(headers)
                 .build();
     }
 
@@ -75,6 +97,7 @@ public class Handler implements RequestHandler<APIGatewayV2HTTPEvent, APIGateway
                 .withStatusCode(200)
                 .withBody(resultBody)
                 .withIsBase64Encoded(true)
+                .withHeaders(headers)
                 .build();
 
     }
@@ -93,6 +116,7 @@ public class Handler implements RequestHandler<APIGatewayV2HTTPEvent, APIGateway
                 .withStatusCode(200)
                 .withBody(resultBody)
                 .withIsBase64Encoded(true)
+                .withHeaders(headers)
                 .build();
     }
 }

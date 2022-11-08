@@ -17,6 +17,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.search.highlight.QueryScorer;
+import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.LMDirichletSimilarity;
 import org.apache.lucene.search.similarities.MultiSimilarity;
@@ -56,7 +57,8 @@ public class Searcher {
         QueryParser qp = new QueryParser("doc", analyzer);
         Query q = qp.parse(query);
         QueryScorer queryScorer = new QueryScorer(q);
-        Highlighter highlighter = new Highlighter(queryScorer);
+        Highlighter highlighter = new Highlighter(
+                new SimpleHTMLFormatter("<mark>", "</mark>"), queryScorer);
         highlighter.setMaxDocCharsToAnalyze(Integer.MAX_VALUE);
 
         TopDocs docs = searcher.search(q, hitsPerPage);
