@@ -7,7 +7,7 @@ import axios from "axios";
 import RfcSearchResults from "./components/RfcSearchResults";
 import Result from "./types/Result";
 
-const apiUrl = "https://ax1tx6uf8d.execute-api.us-east-2.amazonaws.com/api/2022-11-07";
+const apiUrl = "https://d16wawiwj0bss3.cloudfront.net/api/2022-11-07";
 
 interface AppProps {
 

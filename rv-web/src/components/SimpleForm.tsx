@@ -1,4 +1,4 @@
-import React, {Component, MutableRefObject} from "react";
+import React, {Component} from "react";
 import Container from 'react-bootstrap/Container';
 import {Form} from "react-bootstrap";
 
@@ -21,7 +21,6 @@ class SimpleForm extends Component<SimpleFormProps, SimpleFormState> {
 
     submit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        console.log("submit");
         this.props.submitCallback(this.state.query);
     }
 

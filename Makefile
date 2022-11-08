@@ -29,6 +29,10 @@ searcher-lambda-run-docker: searcher-lambda-docker-build
 	cd $(makeFileDir)/rv-searcher && \
 		docker run -p 9000:9000 rv-searcher
 
-deploy-cdk: searcher-lambda-docker-build
+build-web:
+    # TODO lookup using CloudFormation stack output variable
+	cd $(makeFileDir)/rv-web && npm run build
+
+deploy-cdk: searcher-lambda-docker-build build-web
 	cd $(makeFileDir)/rv-cdk && \
 		(source ~/.aws_kitten_cat_credentials && cdk deploy)

@@ -12,8 +12,16 @@ import {
 import {Construct} from 'constructs';
 import * as path from "path";
 import {Architecture} from "aws-cdk-lib/aws-lambda";
-import {AllowedMethods, HttpVersion, PriceClass} from "aws-cdk-lib/aws-cloudfront";
-import {HttpRouteKey} from "@aws-cdk/aws-apigatewayv2-alpha";
+import {
+    AllowedMethods,
+    HttpVersion,
+    OriginAccessIdentity,
+    PriceClass,
+    ResponseHeadersPolicy
+} from "aws-cdk-lib/aws-cloudfront";
+import {BucketAccessControl} from "aws-cdk-lib/aws-s3";
+import {BucketDeployment, Source} from "aws-cdk-lib/aws-s3-deployment";
+import {S3Origin} from "aws-cdk-lib/aws-cloudfront-origins";
 
 export class RfcViewerCdkStack extends cdk.Stack {
     constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -48,21 +56,40 @@ export class RfcViewerCdkStack extends cdk.Stack {
             methods: [apigwv2.HttpMethod.ANY],
         });
 
-        const strippedEndpoint = cdk.Fn.parseDomainName(httpApi.apiEndpoint);
-
-        // const cloudfrontDistribution = new cloudfront.Distribution(this, 'myDist', {
-        //     defaultBehavior: {
-        //         origin: new cloudfront_origins.HttpOrigin(strippedEndpoint),
-        //         allowedMethods: AllowedMethods.ALLOW_ALL,
-        //     },
-        //     httpVersion: HttpVersion.HTTP2_AND_3,
-        //     priceClass: PriceClass.PRICE_CLASS_200,
-        // });
-
-        new s3.Bucket(this, 'MyFirstBucket', {
+        const staticBucket = new s3.Bucket(this, 'StaticWebsite', {
             versioned: true,
             removalPolicy: cdk.RemovalPolicy.DESTROY,
-            autoDeleteObjects: true
+            autoDeleteObjects: true,
+            accessControl: BucketAccessControl.PRIVATE,
+        });
+
+        const originAccessIdentity = new OriginAccessIdentity(this, 'OriginAccessIdentity');
+        staticBucket.grantRead(originAccessIdentity);
+
+        const strippedEndpoint = cdk.Fn.parseDomainName(httpApi.apiEndpoint);
+        const cloudfrontDistribution = new cloudfront.Distribution(this, 'myDist', {
+            httpVersion: HttpVersion.HTTP2_AND_3,
+            priceClass: PriceClass.PRICE_CLASS_200,
+            defaultRootObject: 'index.html',
+            defaultBehavior: {
+                origin: new S3Origin(staticBucket, {
+                    originAccessIdentity: originAccessIdentity
+                }),
+            },
+            additionalBehaviors: {
+                'api/*': {
+                    origin: new cloudfront_origins.HttpOrigin(strippedEndpoint),
+                    allowedMethods: AllowedMethods.ALLOW_ALL,
+                    compress: true,
+                    responseHeadersPolicy: ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT,
+                }
+            }
+        });
+        new BucketDeployment(this, 'BucketDeployment', {
+            destinationBucket: staticBucket,
+            sources: [Source.asset(path.resolve(__dirname, '../../rv-web/build'))],
+            memoryLimit: 2048,
+            distribution: cloudfrontDistribution
         });
 
         new cdk.CfnOutput(this, 'HttpApiUrl', {
@@ -71,16 +98,16 @@ export class RfcViewerCdkStack extends cdk.Stack {
             description: 'RfcViewer API endpoint',
         });
 
-        new cdk.CfnOutput(this, 'StrippedEndpoint', {
-            exportName: 'strippedEndpoint',
-            value: strippedEndpoint,
-            description: 'RfcViewer API stripped endpoint',
+        new cdk.CfnOutput(this, 'StaticBucket', {
+            exportName: 'StaticBucket',
+            value: staticBucket.bucketName,
+            description: 'RfcViewer web static bucket',
         });
 
-        // new cdk.CfnOutput(this, 'CloudfrontUrl', {
-        //     exportName: 'RfcViewerCloudfrontEndpoint',
-        //     value: cloudfrontDistribution.domainName,
-        //     description: 'RfcViewer API endpoint',
-        // });
+        new cdk.CfnOutput(this, 'CloudfrontUrl', {
+            exportName: 'RfcViewerCloudfrontEndpoint',
+            value: cloudfrontDistribution.domainName,
+            description: 'RfcViewer API endpoint',
+        });
     }
 }
