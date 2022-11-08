@@ -7,7 +7,7 @@ import axios from "axios";
 import RfcSearchResults from "./components/RfcSearchResults";
 import Result from "./types/Result";
 
-const apiUrl = "https://d16wawiwj0bss3.cloudfront.net/api/2022-11-07";
+const apiUrl = "https://spec.ninja/api/2022-11-07";
 
 interface AppProps {
 

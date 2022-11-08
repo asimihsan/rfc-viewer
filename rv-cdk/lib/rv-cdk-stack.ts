@@ -3,10 +3,13 @@ import * as apigwv2_integrations from '@aws-cdk/aws-apigatewayv2-integrations-al
 
 import * as cdk from 'aws-cdk-lib';
 import {
+    aws_certificatemanager as acm,
     aws_cloudfront as cloudfront,
     aws_cloudfront_origins as cloudfront_origins,
     aws_lambda as lambda,
     aws_s3 as s3,
+    aws_route53 as route53,
+    aws_route53_targets as route53_targets,
     Duration
 } from 'aws-cdk-lib';
 import {Construct} from 'constructs';
@@ -63,6 +66,18 @@ export class RfcViewerCdkStack extends cdk.Stack {
             accessControl: BucketAccessControl.PRIVATE,
         });
 
+        const hostedZone = route53.HostedZone.fromLookup(this, 'SpecNinjaZone', {
+            domainName: 'spec.ninja',
+        });
+        const myCertificate = new acm.DnsValidatedCertificate(this, 'SpecNinjaSiteCert', {
+            domainName: 'www.spec.ninja',
+            subjectAlternativeNames: [
+                'spec.ninja',
+            ],
+            hostedZone: hostedZone,
+            region: 'us-east-1',
+        });
+
         const originAccessIdentity = new OriginAccessIdentity(this, 'OriginAccessIdentity');
         staticBucket.grantRead(originAccessIdentity);
 
@@ -71,10 +86,15 @@ export class RfcViewerCdkStack extends cdk.Stack {
             httpVersion: HttpVersion.HTTP2_AND_3,
             priceClass: PriceClass.PRICE_CLASS_200,
             defaultRootObject: 'index.html',
+            domainNames: ['spec.ninja', 'www.spec.ninja'],
+            certificate: myCertificate,
             defaultBehavior: {
                 origin: new S3Origin(staticBucket, {
                     originAccessIdentity: originAccessIdentity
                 }),
+                compress: true,
+                allowedMethods: AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
+                responseHeadersPolicy: ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT,
             },
             additionalBehaviors: {
                 'api/*': {
@@ -85,6 +105,19 @@ export class RfcViewerCdkStack extends cdk.Stack {
                 }
             }
         });
+
+        new route53.ARecord(this, 'AliasRecordRoot', {
+            zone: hostedZone,
+            target: route53.RecordTarget.fromAlias(
+                new route53_targets.CloudFrontTarget(cloudfrontDistribution)),
+        });
+        new route53.ARecord(this, 'AliasRecordWww', {
+            zone: hostedZone,
+            recordName: 'www',
+            target: route53.RecordTarget.fromAlias(
+                new route53_targets.CloudFrontTarget(cloudfrontDistribution)),
+        });
+
         new BucketDeployment(this, 'BucketDeployment', {
             destinationBucket: staticBucket,
             sources: [Source.asset(path.resolve(__dirname, '../../rv-web/build'))],
