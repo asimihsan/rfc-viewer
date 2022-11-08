@@ -48,3 +48,6 @@ replay_pid*
 lucene-index/*
 lucene-suggester/*
 .idea
+
+art.kittencat.createindex*
+art.kittencat.examplequery*
