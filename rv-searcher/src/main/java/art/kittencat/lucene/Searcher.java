@@ -1,6 +1,5 @@
 package art.kittencat.lucene;
 
-import com.github.luben.zstd.Zstd;
 import com.google.common.io.Closer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,12 +24,14 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.zip.InflaterInputStream;
 
 public class Searcher {
     private static final Logger logger = LogManager.getLogger(Searcher.class);
@@ -91,26 +92,35 @@ public class Searcher {
         }
     }
 
-    private static String decompress(byte[] compressed) {
-        return new String(Zstd.decompress(compressed, (int) Zstd.decompressedSize(compressed)), StandardCharsets.UTF_8);
+    private static String zlibDecompress(byte[] compressed) throws IOException {
+        ByteArrayInputStream bais = new ByteArrayInputStream(compressed);
+        InflaterInputStream iis = new InflaterInputStream(bais);
+
+        StringBuilder sb = new StringBuilder();
+        byte[] buf = new byte[4 * 1024];
+        int rlen;
+        while ((rlen = iis.read(buf)) != -1) {
+            sb.append(new String(Arrays.copyOf(buf, rlen), StandardCharsets.UTF_8));
+        }
+        return sb.toString();
     }
 
-    private static String getDoc(Document d) {
+    private static String getDoc(Document d) throws IOException {
         byte[] html = d.getBinaryValue("htmlCompressed").bytes;
         byte[] text = d.getBinaryValue("textCompressed").bytes;
 
         if (html.length > 0) {
-            return decompress(html);
+            return zlibDecompress(html);
         } else if (text.length > 0) {
-            return decompress(text);
+            return zlibDecompress(text);
         } else {
             return "";
         }
     }
 
-    private static String getWords(Document d) {
+    private static String getWords(Document d) throws IOException {
         byte[] wordsBytes = d.getBinaryValue("wordsCompressed").bytes;
-        return decompress(wordsBytes);
+        return zlibDecompress(wordsBytes);
     }
 
     public void close() throws IOException {

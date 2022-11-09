@@ -1,9 +1,11 @@
 import base64
 import json
 import string
+import zlib
 from pathlib import Path
 from typing import Any, Optional
 from dataclasses import dataclass, field
+from enum import Enum
 
 import chardet
 import spacy
@@ -11,6 +13,11 @@ import zstandard
 from bs4 import BeautifulSoup
 
 nlp = spacy.load("en_core_web_trf")
+
+
+class CompressionMethod(Enum):
+    ZSTD = 1
+    ZLIB = 2
 
 
 @dataclass
@@ -115,13 +122,19 @@ def process_rfc(metadata_filename: Path) -> tuple[Path, Optional[dict]]:
     return metadata_filename, metadata
 
 
-def json_compress(input_bytes) -> str:
+def json_compress(input_bytes, method: CompressionMethod = CompressionMethod.ZLIB) -> str:
     serialized: bytes = json.dumps(input_bytes).encode(encoding='utf-8')
-    compressed: bytes = zstandard.compress(serialized, level=19)
+    if method == CompressionMethod.ZSTD:
+        compressed: bytes = zstandard.compress(serialized, level=19)
+    else:
+        compressed: bytes = zlib.compress(serialized, level=9)
     return base64.b64encode(compressed).decode('ascii')
 
 
-def json_decompress(input_str: str):
+def json_decompress(input_str: str, method: CompressionMethod = CompressionMethod.ZLIB):
     decoded: bytes = base64.b64decode(input_str)
-    decompressed: bytes = zstandard.decompress(decoded)
+    if method == CompressionMethod.ZSTD:
+        decompressed: bytes = zstandard.decompress(decoded)
+    else:
+        decompressed: bytes = zlib.decompress(decoded)
     return json.loads(decompressed)
