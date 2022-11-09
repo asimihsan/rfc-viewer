@@ -15,6 +15,27 @@ create-index:
 	cd $(makeFileDir)/rv-searcher && \
 		./gradlew createIndex --args='$(makeFileDir)/rv-downloader/preprocessed_rfcs.jsonl'
 
+graalvm-create-index:
+	cd $(makeFileDir)/rv-searcher && \
+		./gradlew shadowJar && \
+		native-image \
+			--no-fallback \
+			-cp ./build/libs/rv-searcher-unspecified.jar \
+			-H:Class=art.kittencat.CreateIndex \
+			-H:+ReportUnsupportedElementsAtRuntime \
+			--features=art.kittencat.ReflectionRegistration && \
+		./art.kittencat.createindex '/Users/asimi/workplace/rfc-viewer/rv-downloader/preprocessed_rfcs.jsonl'
+
+graalvm-query-example:
+	cd $(makeFileDir)/rv-searcher && \
+		./gradlew shadowJar && \
+		native-image \
+			--no-fallback \
+			-cp ./build/libs/rv-searcher-unspecified.jar \
+			-H:Class=art.kittencat.ExampleQuery \
+			-H:+ReportUnsupportedElementsAtRuntime \
+			--features=art.kittencat.ReflectionRegistration
+
 searcher:
 	cd $(makeFileDir)/rv-searcher && \
         ./gradlew build && \
