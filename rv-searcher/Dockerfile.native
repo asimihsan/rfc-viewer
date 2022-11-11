@@ -1,0 +1,33 @@
+FROM --platform=linux/arm64 ubuntu:22.04
+
+ARG GRAALVM_URL=https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.3.0/graalvm-ce-java17-linux-aarch64-22.3.0.tar.gz
+ARG GRAALVM_SHA256SUM=e27249d9eef4504deb005cf14c6a028aad1adfa37209e12e9d7407710c08ed90
+
+ENV PATH=/root/graalvm/bin:$PATH
+ENV JAVA_HOME=/root/graalvm
+ENV SDKMAN_INIT="/root/.sdkman/bin/sdkman-init.sh"
+
+COPY ./ /workdir
+RUN rm -f /etc/apt/apt.conf.d/docker-clean; \
+    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+RUN --mount=type=cache,target=/var/cache,sharing=locked \
+    --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    --mount=type=cache,target=/root/cache,sharing=locked \
+    --mount=type=cache,target=/root/.gradle,sharing=locked \
+    set -ex && \
+    apt-get -y update && \
+    apt-get -y upgrade && \
+    apt-get -y install build-essential ca-certificates curl gradle unzip zip zlib1g zlib1g-dev
+RUN if ! test -e /root/cache/graalvm.tar.gz; then curl --silent --show-error --location --output /root/cache/graalvm.tar.gz ${GRAALVM_URL}; fi && \
+    [ $(sha256sum /root/cache/graalvm.tar.gz | cut -f1 -d ' ') = ${GRAALVM_SHA256SUM} ] && \
+    tar -C /root/ -xzf /root/cache/graalvm.tar.gz && \
+    mv /root/graalvm* /root/graalvm && \
+    echo "export PATH=/root/graalvm/bin:$PATH" > /root/.bashrc && \
+    echo "export JAVA_HOME=/root/graalvm" >> /root/.bashrc && \
+    gu install native-image
+RUN curl -s "https://get.sdkman.io" | bash && \
+    bash -c "source $SDKMAN_INIT && sdk install gradle 7.5.1" && \
+    echo "source /root/.sdkman/bin/sdkman-init.sh" >> /root/.bashrc
+RUN bash -c 'cd /workdir && ./gradlew shadowJar'
+RUN rm -rf /workdir
