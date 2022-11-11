@@ -44,11 +44,15 @@ searcher:
 
 searcher-lambda-docker-build: searcher
 	cd $(makeFileDir)/rv-searcher && \
-		docker build -t rv-searcher .
+		docker buildx build -t rv-searcher .
 
 searcher-lambda-run-docker: searcher-lambda-docker-build
 	cd $(makeFileDir)/rv-searcher && \
 		docker run -p 9000:9000 rv-searcher
+
+searcher-lambda-docker-build-native:
+	cd $(makeFileDir)/rv-searcher && \
+		docker buildx build -t rv-searcher-native -f Dockerfile.native .
 
 build-web:
     # TODO lookup using CloudFormation stack output variable

@@ -7,20 +7,21 @@ import {
     aws_cloudfront as cloudfront,
     aws_cloudfront_origins as cloudfront_origins,
     aws_lambda as lambda,
-    aws_s3 as s3,
     aws_route53 as route53,
     aws_route53_targets as route53_targets,
+    aws_s3 as s3,
     Duration
 } from 'aws-cdk-lib';
 import {Construct} from 'constructs';
 import * as path from "path";
 import {Architecture} from "aws-cdk-lib/aws-lambda";
 import {
-    AllowedMethods,
+    AllowedMethods, CachePolicy,
     HttpVersion,
-    OriginAccessIdentity,
+    OriginAccessIdentity, OriginRequestPolicy,
     PriceClass,
-    ResponseHeadersPolicy
+    ResponseHeadersPolicy,
+    ViewerProtocolPolicy
 } from "aws-cdk-lib/aws-cloudfront";
 import {BucketAccessControl} from "aws-cdk-lib/aws-s3";
 import {BucketDeployment, Source} from "aws-cdk-lib/aws-s3-deployment";
@@ -95,6 +96,9 @@ export class RfcViewerCdkStack extends cdk.Stack {
                 compress: true,
                 allowedMethods: AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
                 responseHeadersPolicy: ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT,
+                viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                cachePolicy: CachePolicy.CACHING_OPTIMIZED,
+                originRequestPolicy: OriginRequestPolicy.CORS_S3_ORIGIN,
             },
             additionalBehaviors: {
                 'api/*': {
@@ -102,6 +106,9 @@ export class RfcViewerCdkStack extends cdk.Stack {
                     allowedMethods: AllowedMethods.ALLOW_ALL,
                     compress: true,
                     responseHeadersPolicy: ResponseHeadersPolicy.CORS_ALLOW_ALL_ORIGINS_WITH_PREFLIGHT,
+                    viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                    cachePolicy: CachePolicy.CACHING_DISABLED,
+                    originRequestPolicy: OriginRequestPolicy.CORS_CUSTOM_ORIGIN,
                 }
             }
         });
