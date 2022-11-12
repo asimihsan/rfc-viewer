@@ -1,11 +1,10 @@
-ARG image=ubuntu:22.04
+ARG image=amazonlinux:2
 
 FROM --platform=linux/arm64 ${image} as downloader
 RUN --mount=type=cache,target=/var/cache,sharing=locked \
-    --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    --mount=type=cache,target=/var/cache/yum,sharing=locked \
     set -ex && \
-    apt-get -y install curl zip unzip
+    yum -y install curl gzip tar zip unzip
 
 FROM --platform=linux/arm64 downloader as graalvm
 ARG GRAALVM_URL=https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-22.3.0/graalvm-ce-java17-linux-aarch64-22.3.0.tar.gz
@@ -24,15 +23,12 @@ RUN --mount=type=cache,target=/root/.gradle,sharing=locked \
 
 FROM --platform=linux/arm64 ${image} as base
 RUN --mount=type=cache,target=/var/cache,sharing=locked \
-    --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    --mount=type=cache,target=/var/cache/yum,sharing=locked \
     set -ex && \
-    rm -f /etc/apt/apt.conf.d/docker-clean; \
-    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache && \
-    apt-get -y update && \
-    apt-get -y upgrade && \
-    apt-get -y install \
-    build-essential zip zlib1g zlib1g-dev
+    yum -y update && \
+    yum -y upgrade && \
+    yum -y groupinstall 'Development Tools' && \
+    yum -y install zip zlib1g zlib1g-dev
 
 FROM --platform=linux/arm64 base as final
 ENV PATH=/root/graalvm/bin:$PATH
@@ -41,8 +37,7 @@ COPY --from=graalvm /root/graalvm /root/graalvm
 COPY --from=sdkman /root/.sdkman /root/.sdkman
 COPY ./ /workdir
 RUN --mount=type=cache,target=/var/cache,sharing=locked \
-    --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    --mount=type=cache,target=/var/cache/yum,sharing=locked \
     --mount=type=cache,target=/root/cache,sharing=locked \
     --mount=type=cache,target=/root/.gradle,sharing=locked \
     echo "export PATH=/root/graalvm/bin:$PATH" > /root/.bashrc && \
