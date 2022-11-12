@@ -51,3 +51,4 @@ lucene-suggester/*
 
 art.kittencat.createindex*
 art.kittencat.examplequery*
+art.kittencat.lambda.lambdaruntime*
